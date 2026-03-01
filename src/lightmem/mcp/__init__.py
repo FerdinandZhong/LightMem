@@ -7,7 +7,7 @@ Usage:
     lightmem-mcp
 
     # Via uvx:
-    uvx --from "git+https://github.com/zjunlp/LightMem.git[mcp]" lightmem-mcp
+    uvx --from "git+https://github.com/FerdinandZhong/LightMem.git[mcp]" lightmem-mcp
 """
 
 from lightmem.mcp.server import main, mcp

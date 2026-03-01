@@ -13,7 +13,7 @@ Add to your MCP client config (e.g., Claude Desktop, Cursor):
   "mcpServers": {
     "lightmem": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/zjunlp/LightMem.git[mcp]", "lightmem-mcp"],
+      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git[mcp]", "lightmem-mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}"
       }
@@ -57,7 +57,7 @@ Alternatively, provide a JSON config file via `LIGHTMEM_CONFIG_PATH` or `--confi
 
 ```bash
 export OPENAI_API_KEY="your-api-key"
-uvx --from "git+https://github.com/zjunlp/LightMem.git[mcp]" lightmem-mcp
+uvx --from "git+https://github.com/FerdinandZhong/LightMem.git[mcp]" lightmem-mcp
 ```
 
 ### Local Development
