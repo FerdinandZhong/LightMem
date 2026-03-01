@@ -424,7 +424,7 @@ def main():
             print("Using environment-based configuration (API mode)", file=sys.stderr)
         else:
             print(f"Using config file: {CONFIG_PATH}", file=sys.stderr)
-        mcp.run(single_thread=True)
+        mcp.run()
 
     except KeyboardInterrupt:
         print("Server interrupted by user", file=sys.stderr)
