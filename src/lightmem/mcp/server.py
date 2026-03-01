@@ -372,17 +372,17 @@ def show_lightmem_instance() -> Dict[str, Any]:
     try:
         show = {}
         show["lightmem"] = lightmem_instance
-        show["config"] = lightmem_instance.config
-        show["compressor"] = lightmem_instance.compressor
-        show["segmenter"] = lightmem_instance.segmenter
-        show["manager"] = lightmem_instance.manager
-        show["text_embedder"] = lightmem_instance.text_embedder
-        show["retrieve_strategy"] = lightmem_instance.retrieve_strategy
-        if lightmem_instance.retrieve_strategy in ["context", "hybrid"]:
-            show["context_retriever"] = lightmem_instance.context_retriever
-        if lightmem_instance.retrieve_strategy in ["embedding", "hybrid"]:
-            show["embedding_retriever"] = lightmem_instance.embedding_retriever
-        show["logger"] = lightmem_instance.logger
+        show["config"] = getattr(lightmem_instance, 'config', None)
+        show["compressor"] = getattr(lightmem_instance, 'compressor', None)
+        show["segmenter"] = getattr(lightmem_instance, 'segmenter', None)
+        show["manager"] = getattr(lightmem_instance, 'manager', None)
+        show["text_embedder"] = getattr(lightmem_instance, 'text_embedder', None)
+        show["retrieve_strategy"] = getattr(lightmem_instance, 'retrieve_strategy', None)
+        if show["retrieve_strategy"] in ["context", "hybrid"]:
+            show["context_retriever"] = getattr(lightmem_instance, 'context_retriever', None)
+        if show["retrieve_strategy"] in ["embedding", "hybrid"]:
+            show["embedding_retriever"] = getattr(lightmem_instance, 'embedding_retriever', None)
+        show["logger"] = getattr(lightmem_instance, 'logger', None)
 
         readable_show = json.dumps({k: str(v) for k, v in show.items()}, indent=2, ensure_ascii=False)
 
