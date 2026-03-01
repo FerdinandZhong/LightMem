@@ -296,14 +296,92 @@ class LightMemory:
             self.logger.info(f"[{call_id}] Pre-compression disabled, using normalized messages")
         
         if not self.config.topic_segment:
-            # TODO:
-            self.logger.info(f"[{call_id}] Topic segmentation disabled, returning emitted messages")
+            # Direct storage mode: store memories without segmentation
+            self.logger.info(f"[{call_id}] Topic segmentation disabled, using direct storage mode")
+
+            # Check if we have an embedding retriever for storage
+            if self.config.index_strategy not in ["embedding", "hybrid"] or not hasattr(self, 'embedding_retriever'):
+                self.logger.warning(f"[{call_id}] No embedding retriever available, skipping storage")
+                return {
+                    "triggered": True,
+                    "cut_index": len(msgs),
+                    "boundaries": [0, len(msgs)],
+                    "emitted_messages": msgs,
+                    "carryover_size": 0,
+                }
+
+            # Create memory entries directly from messages
+            stored_count = 0
+            for msg in msgs:
+                if msg.get("role") == "user":
+                    continue  # Skip user-only messages, we want the conversation pair
+
+                # For assistant messages, find the corresponding user message
+                user_content = ""
+                assistant_content = msg.get("content", "")
+                timestamp = msg.get("time_stamp", datetime.now().isoformat(timespec="milliseconds"))
+                weekday = msg.get("weekday", "")
+
+                # Look for user message in the original messages
+                for m in msgs:
+                    if m.get("role") == "user":
+                        user_content = m.get("content", "")
+                        break
+
+                # Create memory text (combining user question and assistant response)
+                memory_text = f"User: {user_content}\nAssistant: {assistant_content}"
+
+                # Generate embedding
+                embedding_vector = self.text_embedder.embed(memory_text)
+
+                # Generate unique ID
+                memory_id = str(uuid.uuid4())
+                while self.embedding_retriever.exists(memory_id):
+                    memory_id = str(uuid.uuid4())
+
+                # Parse timestamp to float
+                try:
+                    dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    float_timestamp = dt.timestamp()
+                except:
+                    float_timestamp = 0.0
+
+                # Create payload
+                payload = {
+                    "time_stamp": timestamp,
+                    "float_time_stamp": float_timestamp,
+                    "weekday": weekday,
+                    "topic_id": None,
+                    "topic_summary": "",
+                    "category": "conversation",
+                    "subcategory": "direct_storage",
+                    "memory_class": "qa_pair",
+                    "memory": memory_text,
+                    "original_memory": memory_text,
+                    "compressed_memory": "",
+                    "speaker_id": "",
+                    "speaker_name": "",
+                    "consolidated": False,
+                }
+
+                # Store directly to embedding retriever
+                self.embedding_retriever.insert(
+                    vectors=[embedding_vector],
+                    payloads=[payload],
+                    ids=[memory_id],
+                )
+                stored_count += 1
+                self.logger.info(f"[{call_id}] Stored memory entry {memory_id}")
+
+            self.logger.info(f"[{call_id}] Direct storage completed: {stored_count} entries stored")
             return {
                 "triggered": True,
                 "cut_index": len(msgs),
                 "boundaries": [0, len(msgs)],
                 "emitted_messages": msgs,
                 "carryover_size": 0,
+                "direct_storage": True,
+                "stored_count": stored_count,
             }
 
         all_segments = self.senmem_buffer_manager.add_messages(compressed_messages, self.segmenter, self.text_embedder)
