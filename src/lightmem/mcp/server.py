@@ -214,13 +214,28 @@ def add_memory(user_input: str, assistant_reply: str, timestamp: Optional[str] =
             force_extract=force_extract
         )
 
+        # Check for direct storage mode (topic_segment disabled)
+        if added_result.get("direct_storage"):
+            stored_count = added_result.get("stored_count", 0)
+            return {
+                "status": STATUS_SUCCESS,
+                "message": f"Memory stored successfully using direct storage mode. {stored_count} entries saved.",
+                "details": {
+                    "direct_storage": True,
+                    "stored_count": stored_count,
+                    "triggered": added_result.get("triggered"),
+                }
+            }
+
+        # Legacy early return (no storage - should not happen with direct storage enabled)
         if (
             "triggered" in added_result and
-            "emitted_messages" in added_result
+            "emitted_messages" in added_result and
+            not added_result.get("direct_storage")
         ):
             return {
                 "status": STATUS_SUCCESS,
-                "message": "Topic segmentation is disabled; memory pipeline returned early.",
+                "message": "Topic segmentation is disabled; memory pipeline returned early without storage.",
                 "details": {
                     "triggered": added_result.get("triggered"),
                     "cut_index": added_result.get("cut_index"),
