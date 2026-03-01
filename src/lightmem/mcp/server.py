@@ -300,7 +300,7 @@ def offline_update(top_k: int = 20, keep_top_n: int = 10, score_threshold: float
         }
 
 @mcp.tool()
-def retrieve_memory(query: str, limit: int = 10, filters: Optional[Any] = {}) -> Dict[str, Any]:
+def retrieve_memory(query: str, limit: int = 10, filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Retrieve relevant memory entries from LightMem based on a query.
 
@@ -320,8 +320,7 @@ def retrieve_memory(query: str, limit: int = 10, filters: Optional[Any] = {}) ->
             "message": "LightMem is not initialized. Please check the configuration file."
         }
 
-    if filters == {}:
-        filters = None
+    # filters is already None by default, no conversion needed
 
     if not query:
         return {
