@@ -46,6 +46,9 @@ class Qdrant:
                 params["api_key"] = config.api_key
             if config.url:
                 params["url"] = config.url
+                # Explicitly set port=None to use URL's port (QdrantClient defaults to 6333)
+                params["port"] = None
+                params["grpc_port"] = None
             if config.host and config.port:
                 params["host"] = config.host
                 params["port"] = config.port
