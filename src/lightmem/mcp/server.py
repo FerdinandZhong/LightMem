@@ -61,6 +61,7 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
     # Remote Qdrant configuration
     qdrant_url = os.environ.get("QDRANT_URL")
     qdrant_api_key = os.environ.get("QDRANT_API_KEY")
+    qdrant_timeout = int(os.environ.get("QDRANT_TIMEOUT", "60"))  # Default 60s for sandbox environments
 
     # Debug: Print configuration
     print(f"[LightMem Config] QDRANT_URL env: {qdrant_url or 'NOT SET (using local storage)'}", file=sys.stderr)
@@ -80,9 +81,11 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
             "collection_name": collection_name,
             "embedding_model_dims": embedding_dims,
             "url": qdrant_url,
+            "timeout": qdrant_timeout,
         }
         if qdrant_api_key:
             qdrant_config["api_key"] = qdrant_api_key
+        print(f"[LightMem Config] Qdrant timeout: {qdrant_timeout}s", file=sys.stderr)
     else:
         # Local Qdrant mode
         qdrant_config = {

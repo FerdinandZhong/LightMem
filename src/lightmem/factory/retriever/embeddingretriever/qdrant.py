@@ -55,6 +55,10 @@ class Qdrant:
                     if os.path.exists(config.path) and os.path.isdir(config.path):
                         shutil.rmtree(config.path)
 
+            # Add timeout for remote connections (helps with slow network/sandbox environments)
+            if config.timeout and (config.url or (config.host and config.port)):
+                params["timeout"] = config.timeout
+
             self.client = QdrantClient(**params)
 
         self.collection_name = config.collection_name
