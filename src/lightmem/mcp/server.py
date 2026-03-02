@@ -88,7 +88,8 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
             "configs": {
                 "collection_name": collection_name,
                 "embedding_model_dims": embedding_dims,
-                "path": data_path
+                "path": data_path,
+                "on_disk": True
             }
         },
         "update": "offline",
