@@ -31,15 +31,17 @@ Add to your MCP client config (e.g., Claude Desktop, Cursor, Agent Studio):
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `OPENAI_API_KEY` | **Yes** | - | OpenAI API key for embeddings and LLM |
-| `LIGHTMEM_DATA_PATH` | **Yes*** | `./lightmem_data` | Path for Qdrant vector storage |
+| `LIGHTMEM_DATA_PATH` | No* | `./lightmem_data` | Path for local Qdrant storage |
 | `LIGHTMEM_COLLECTION_NAME` | No | `lightmem_memory` | Qdrant collection name |
+| `QDRANT_URL` | No | - | Remote Qdrant server URL (enables remote mode) |
+| `QDRANT_API_KEY` | No | - | API key for remote Qdrant server |
 | `OPENAI_BASE_URL` | No | `https://api.openai.com/v1` | OpenAI-compatible API base URL |
 | `LIGHTMEM_LLM_MODEL` | No | `gpt-4o-mini` | LLM model for memory operations |
 | `LIGHTMEM_EMBEDDING_MODEL` | No | `text-embedding-3-small` | Embedding model |
 | `LIGHTMEM_EMBEDDING_DIMS` | No | `1536` | Embedding dimensions |
 | `LIGHTMEM_CONFIG_PATH` | No | - | Path to custom config JSON file |
 
-> **\*Required for Cross-Session Memory**: While `LIGHTMEM_DATA_PATH` has a default value, you **must** set it explicitly to a persistent, shared location for memories to persist across sessions.
+> **\*Storage Mode**: Use either `LIGHTMEM_DATA_PATH` (local) OR `QDRANT_URL` (remote). Remote mode is recommended for sandboxed environments.
 
 ### Cross-Session Memory Setup
 
@@ -55,6 +57,29 @@ export LIGHTMEM_DATA_PATH="/home/cdsw/lightmem_data/"
 ```
 
 **Use different `LIGHTMEM_COLLECTION_NAME` values** to isolate data between different workflows or use cases.
+
+### Remote Qdrant Mode (Recommended for Sandboxed Environments)
+
+For environments with filesystem sandboxing (like Agent Studio MCP servers), use a remote Qdrant server:
+
+```json
+{
+  "mcpServers": {
+    "lightmem": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "QDRANT_URL": "https://your-qdrant-server:6333",
+        "QDRANT_API_KEY": "${QDRANT_API_KEY}",
+        "LIGHTMEM_COLLECTION_NAME": "my_collection"
+      }
+    }
+  }
+}
+```
+
+When `QDRANT_URL` is set, LightMem connects to the remote Qdrant server instead of using local storage. This bypasses filesystem sandbox restrictions.
 
 ### Config File
 
@@ -109,6 +134,8 @@ fastmcp run src/lightmem/mcp/server.py:mcp --transport http --port 8000
 
 ## Architecture
 
+### Local Mode (LIGHTMEM_DATA_PATH)
+
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │   MCP Client    │────▶│  LightMem MCP    │────▶│   OpenAI API    │
@@ -122,21 +149,54 @@ fastmcp run src/lightmem/mcp/server.py:mcp --transport http --port 8000
                         └──────────────────┘
 ```
 
+### Remote Mode (QDRANT_URL) - Recommended for Sandboxed Environments
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   MCP Client    │────▶│  LightMem MCP    │────▶│   OpenAI API    │
+│ (Claude, etc.)  │     │     Server       │     │  (LLM + Embed)  │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │
+                               │ HTTP
+                               ▼
+                        ┌──────────────────┐
+                        │ Qdrant (Remote)  │
+                        │  Vector Server   │
+                        └──────────────────┘
+```
+
 - **Pure API mode**: No GPU or local models required
 - **OpenAI API**: Used for both LLM operations and embeddings
-- **Qdrant**: Local vector database for memory storage
+- **Qdrant**: Local or remote vector database for memory storage
 - **Direct Storage**: When `topic_segment` is disabled (default for MCP), memories are stored directly without heavy segmentation dependencies
 
 ## Agent Studio Integration
 
-When using LightMem MCP in Cloudera Agent Studio:
+MCP servers in Agent Studio run inside bubblewrap sandboxes with filesystem isolation. **Local storage does not persist** because writes go to a sandboxed virtual filesystem.
 
-1. **Set persistent storage path** via `LIGHTMEM_DATA_PATH` environment variable
-2. **Avoid session-specific folders** - these are cleared between conversations
-3. **Use unique collection names** to separate data between workflows
+### Recommended: Remote Qdrant Mode
 
-Example workflow variables:
+Deploy Qdrant as a separate CAI Application and connect via `QDRANT_URL`:
+
+```json
+{
+  "env": {
+    "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+    "QDRANT_URL": "https://your-cai-domain/qdrant-projectid",
+    "LIGHTMEM_COLLECTION_NAME": "invoice_parser"
+  }
+}
+```
+
+See the [qdrant_cai_app](https://github.com/your-repo/qdrant_cai_app) for deployment scripts.
+
+### Alternative: Local Mode (May Not Work with Sandbox)
+
+If your environment doesn't have sandbox restrictions:
+
 ```
 LIGHTMEM_DATA_PATH = /data/shared/lightmem/my_workflow/
 LIGHTMEM_COLLECTION_NAME = my_workflow_memory
 ```
+
+**Note**: Local mode requires writes to persist outside the sandbox, which may not be possible in all Agent Studio configurations.

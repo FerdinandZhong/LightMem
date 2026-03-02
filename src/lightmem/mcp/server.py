@@ -42,8 +42,10 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
         LIGHTMEM_LLM_MODEL: LLM model name (optional, defaults to gpt-4o-mini)
         LIGHTMEM_EMBEDDING_MODEL: Embedding model name (optional, defaults to text-embedding-3-small)
         LIGHTMEM_EMBEDDING_DIMS: Embedding dimensions (optional, defaults to 1536)
-        LIGHTMEM_DATA_PATH: Path for storing data (optional, defaults to ./lightmem_data)
+        LIGHTMEM_DATA_PATH: Path for local Qdrant storage (optional, defaults to ./lightmem_data)
         LIGHTMEM_COLLECTION_NAME: Qdrant collection name (optional, defaults to lightmem_memory)
+        QDRANT_URL: Remote Qdrant server URL (optional, enables remote mode)
+        QDRANT_API_KEY: Qdrant API key for remote server (optional)
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -56,11 +58,39 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
     data_path = os.environ.get("LIGHTMEM_DATA_PATH", "./lightmem_data")
     collection_name = os.environ.get("LIGHTMEM_COLLECTION_NAME", "lightmem_memory")
 
-    # Debug: Print configuration paths
-    print(f"[LightMem Config] LIGHTMEM_DATA_PATH env: {os.environ.get('LIGHTMEM_DATA_PATH', 'NOT SET')}", file=sys.stderr)
-    print(f"[LightMem Config] Using data_path: {data_path}", file=sys.stderr)
+    # Remote Qdrant configuration
+    qdrant_url = os.environ.get("QDRANT_URL")
+    qdrant_api_key = os.environ.get("QDRANT_API_KEY")
+
+    # Debug: Print configuration
+    print(f"[LightMem Config] QDRANT_URL env: {qdrant_url or 'NOT SET (using local storage)'}", file=sys.stderr)
+    if qdrant_url:
+        print(f"[LightMem Config] Using remote Qdrant: {qdrant_url}", file=sys.stderr)
+        print(f"[LightMem Config] QDRANT_API_KEY: {'SET' if qdrant_api_key else 'NOT SET'}", file=sys.stderr)
+    else:
+        print(f"[LightMem Config] LIGHTMEM_DATA_PATH env: {os.environ.get('LIGHTMEM_DATA_PATH', 'NOT SET')}", file=sys.stderr)
+        print(f"[LightMem Config] Using local data_path: {data_path}", file=sys.stderr)
+        print(f"[LightMem Config] on_disk: True", file=sys.stderr)
     print(f"[LightMem Config] Using collection_name: {collection_name}", file=sys.stderr)
-    print(f"[LightMem Config] on_disk: True", file=sys.stderr)
+
+    # Build Qdrant retriever config
+    if qdrant_url:
+        # Remote Qdrant mode
+        qdrant_config = {
+            "collection_name": collection_name,
+            "embedding_model_dims": embedding_dims,
+            "url": qdrant_url,
+        }
+        if qdrant_api_key:
+            qdrant_config["api_key"] = qdrant_api_key
+    else:
+        # Local Qdrant mode
+        qdrant_config = {
+            "collection_name": collection_name,
+            "embedding_model_dims": embedding_dims,
+            "path": data_path,
+            "on_disk": True
+        }
 
     return {
         "pre_compress": False,
@@ -91,12 +121,7 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
         "retrieve_strategy": "embedding",
         "embedding_retriever": {
             "model_name": "qdrant",
-            "configs": {
-                "collection_name": collection_name,
-                "embedding_model_dims": embedding_dims,
-                "path": data_path,
-                "on_disk": True
-            }
+            "configs": qdrant_config
         },
         "update": "offline",
         "logging": {
