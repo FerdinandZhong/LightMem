@@ -56,6 +56,12 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
     data_path = os.environ.get("LIGHTMEM_DATA_PATH", "./lightmem_data")
     collection_name = os.environ.get("LIGHTMEM_COLLECTION_NAME", "lightmem_memory")
 
+    # Debug: Print configuration paths
+    print(f"[LightMem Config] LIGHTMEM_DATA_PATH env: {os.environ.get('LIGHTMEM_DATA_PATH', 'NOT SET')}", file=sys.stderr)
+    print(f"[LightMem Config] Using data_path: {data_path}", file=sys.stderr)
+    print(f"[LightMem Config] Using collection_name: {collection_name}", file=sys.stderr)
+    print(f"[LightMem Config] on_disk: True", file=sys.stderr)
+
     return {
         "pre_compress": False,
         "topic_segment": False,
