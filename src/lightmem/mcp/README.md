@@ -4,7 +4,28 @@ Launch LightMem as an MCP server via `uvx` for seamless integration with MCP-com
 
 ## Quick Start
 
-### MCP Client Configuration (Recommended: Remote Qdrant)
+### Claude Code Configuration
+
+Add to your `~/.claude/settings.json` or project `.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "lightmem": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp", "lightmem-mcp"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "LIGHTMEM_DATA_PATH": "${HOME}/.claude/lightmem_data"
+      }
+    }
+  }
+}
+```
+
+> **Claude Code** runs locally with filesystem access, so local Qdrant storage works well. For remote/cloud deployments, use `QDRANT_URL` instead.
+
+### MCP Client Configuration (Remote Qdrant - for sandboxed environments)
 
 Add to your MCP client config (e.g., Claude Desktop, Cursor, Agent Studio):
 
@@ -13,7 +34,7 @@ Add to your MCP client config (e.g., Claude Desktop, Cursor, Agent Studio):
   "mcpServers": {
     "lightmem": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
+      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp", "lightmem-mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "QDRANT_URL": "${QDRANT_URL}",
@@ -58,7 +79,7 @@ Remote Qdrant is the **recommended approach** for all production deployments:
   "mcpServers": {
     "lightmem": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
+      "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp", "lightmem-mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "QDRANT_URL": "https://your-qdrant-server:6333",
@@ -109,7 +130,7 @@ Alternatively, provide a JSON config file via `LIGHTMEM_CONFIG_PATH` or `--confi
 ```bash
 export OPENAI_API_KEY="your-api-key"
 export LIGHTMEM_DATA_PATH="/path/to/persistent/storage"
-uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light" lightmem-mcp
+uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp" lightmem-mcp
 ```
 
 ### Local Development
@@ -130,7 +151,7 @@ lightmem-mcp --config /path/to/config.json
 ### Testing with MCP Inspector
 
 ```bash
-npx @modelcontextprotocol/inspector uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light" lightmem-mcp
+npx @modelcontextprotocol/inspector uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp" lightmem-mcp
 ```
 
 ### HTTP Transport

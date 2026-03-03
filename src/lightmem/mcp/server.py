@@ -502,7 +502,7 @@ Usage:
 
 3. Via uvx (after package is published):
 
-   uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light" lightmem-mcp
+   uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp" lightmem-mcp
 
 4. MCP client configuration:
 
@@ -510,7 +510,7 @@ Usage:
      "mcpServers": {
        "lightmem": {
          "command": "uvx",
-         "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
+         "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@claude-code-mcp", "lightmem-mcp"],
          "env": {
            "OPENAI_API_KEY": "${OPENAI_API_KEY}"
          }
