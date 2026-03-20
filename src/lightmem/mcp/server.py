@@ -24,6 +24,9 @@ except ImportError:
 
 _lightmem_instance: Optional[LightMemory] = None
 
+# Runtime overrides (set via configure_lightmem tool, take priority over env vars)
+_runtime_overrides: Dict[str, Any] = {}
+
 # Default config path (can be overridden by --config or LIGHTMEM_CONFIG_PATH)
 CONFIG_PATH = os.environ.get(
     "LIGHTMEM_CONFIG_PATH",
@@ -37,8 +40,8 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
     This enables pure API-based operation without local models.
 
     Environment variables:
-        OPENAI_API_KEY: OpenAI API key (required)
-        OPENAI_BASE_URL: OpenAI base URL (optional, defaults to https://api.openai.com/v1)
+        OPENAI_API_KEY: OpenAI API key (required, or set via configure_lightmem tool)
+        OPENAI_BASE_URL / OPENAI_API_BASE: OpenAI base URL (optional, defaults to https://api.openai.com/v1)
         LIGHTMEM_LLM_MODEL: LLM model name (optional, defaults to gpt-4o-mini)
         LIGHTMEM_EMBEDDING_MODEL: Embedding model name (optional, defaults to text-embedding-3-small)
         LIGHTMEM_EMBEDDING_DIMS: Embedding dimensions (optional, defaults to 1536)
@@ -47,14 +50,19 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
         QDRANT_URL: Remote Qdrant server URL (optional, enables remote mode)
         QDRANT_API_KEY: Qdrant API key for remote server (optional)
     """
-    api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = _runtime_overrides.get("api_key") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
         return None
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    llm_model = os.environ.get("LIGHTMEM_LLM_MODEL", "gpt-4o-mini")
-    embedding_model = os.environ.get("LIGHTMEM_EMBEDDING_MODEL", "text-embedding-3-small")
-    embedding_dims = int(os.environ.get("LIGHTMEM_EMBEDDING_DIMS", "1536"))
+    base_url = (
+        _runtime_overrides.get("base_url")
+        or os.environ.get("OPENAI_BASE_URL")
+        or os.environ.get("OPENAI_API_BASE")
+        or "https://api.openai.com/v1"
+    )
+    llm_model = _runtime_overrides.get("llm_model") or os.environ.get("LIGHTMEM_LLM_MODEL", "gpt-4o-mini")
+    embedding_model = _runtime_overrides.get("embedding_model") or os.environ.get("LIGHTMEM_EMBEDDING_MODEL", "text-embedding-3-small")
+    embedding_dims = int(_runtime_overrides.get("embedding_dims") or os.environ.get("LIGHTMEM_EMBEDDING_DIMS", "1536"))
     data_path = os.environ.get("LIGHTMEM_DATA_PATH", "./lightmem_data")
     collection_name = os.environ.get("LIGHTMEM_COLLECTION_NAME", "lightmem_memory")
 
@@ -402,6 +410,60 @@ def retrieve_memory(query: str, limit: int = 10, filters: Optional[Dict[str, Any
             "status": STATUS_ERROR,
             "message": f"Error retrieving memory: {str(e)}"
         }
+
+@mcp.tool()
+def configure_lightmem(
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    llm_model: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+    embedding_dims: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Configure LightMem runtime settings. Overrides environment variables.
+    Re-initializes the LightMem instance with the new settings.
+
+    Args:
+        api_key: OpenAI API key
+        base_url: OpenAI-compatible API base URL (e.g. https://api.openai.com/v1)
+        llm_model: LLM model name for memory operations (e.g. gpt-4o-mini)
+        embedding_model: Embedding model name (e.g. text-embedding-3-small)
+        embedding_dims: Embedding dimensions (must match the embedding model)
+
+    Returns:
+        A dictionary containing the operation result and active configuration
+    """
+    global _lightmem_instance, _runtime_overrides
+
+    if api_key is not None:
+        _runtime_overrides["api_key"] = api_key
+    if base_url is not None:
+        _runtime_overrides["base_url"] = base_url
+    if llm_model is not None:
+        _runtime_overrides["llm_model"] = llm_model
+    if embedding_model is not None:
+        _runtime_overrides["embedding_model"] = embedding_model
+    if embedding_dims is not None:
+        _runtime_overrides["embedding_dims"] = embedding_dims
+
+    # Reset instance so it re-initializes with new settings on next tool call
+    _lightmem_instance = None
+
+    # Build summary of active config (mask api_key)
+    active = {
+        "api_key": "SET" if (_runtime_overrides.get("api_key") or os.environ.get("OPENAI_API_KEY")) else "NOT SET",
+        "base_url": _runtime_overrides.get("base_url") or os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE") or "https://api.openai.com/v1",
+        "llm_model": _runtime_overrides.get("llm_model") or os.environ.get("LIGHTMEM_LLM_MODEL", "gpt-4o-mini"),
+        "embedding_model": _runtime_overrides.get("embedding_model") or os.environ.get("LIGHTMEM_EMBEDDING_MODEL", "text-embedding-3-small"),
+        "embedding_dims": int(_runtime_overrides.get("embedding_dims") or os.environ.get("LIGHTMEM_EMBEDDING_DIMS", "1536")),
+    }
+
+    return {
+        "status": STATUS_SUCCESS,
+        "message": "Configuration updated. LightMem will re-initialize on the next tool call.",
+        "active_config": active,
+    }
+
 
 @mcp.tool()
 def show_lightmem_instance() -> Dict[str, Any]:

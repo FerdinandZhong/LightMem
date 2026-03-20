@@ -16,8 +16,12 @@ Add to your MCP client config (e.g., Claude Desktop, Cursor, Agent Studio):
       "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "OPENAI_BASE_URL": "${OPENAI_BASE_URL}",
         "QDRANT_URL": "${QDRANT_URL}",
-        "LIGHTMEM_COLLECTION_NAME": "${LIGHTMEM_COLLECTION_NAME}"
+        "LIGHTMEM_COLLECTION_NAME": "${LIGHTMEM_COLLECTION_NAME}",
+        "LIGHTMEM_LLM_MODEL": "${LIGHTMEM_LLM_MODEL}",
+        "LIGHTMEM_EMBEDDING_MODEL": "${LIGHTMEM_EMBEDDING_MODEL}",
+        "LIGHTMEM_EMBEDDING_DIMS": "${LIGHTMEM_EMBEDDING_DIMS}"
       }
     }
   }
@@ -61,9 +65,13 @@ Remote Qdrant is the **recommended approach** for all production deployments:
       "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "OPENAI_BASE_URL": "${OPENAI_BASE_URL}",
         "QDRANT_URL": "https://your-qdrant-server:6333",
         "QDRANT_API_KEY": "${QDRANT_API_KEY}",
-        "LIGHTMEM_COLLECTION_NAME": "my_collection"
+        "LIGHTMEM_COLLECTION_NAME": "my_collection",
+        "LIGHTMEM_LLM_MODEL": "gpt-4o-mini",
+        "LIGHTMEM_EMBEDDING_MODEL": "text-embedding-3-small",
+        "LIGHTMEM_EMBEDDING_DIMS": "1536"
       }
     }
   }
@@ -97,6 +105,7 @@ Alternatively, provide a JSON config file via `LIGHTMEM_CONFIG_PATH` or `--confi
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `get_timestamp` | Get current timestamp | None |
+| `configure_lightmem` | Configure API key, base URL, and model at runtime | `api_key`, `base_url`, `llm_model`, `embedding_model`, `embedding_dims` |
 | `add_memory` | Add user/assistant message pair to memory | `user_input`, `assistant_reply`, `timestamp`, `force_segment`, `force_extract` |
 | `retrieve_memory` | Query memories by natural language | `query`, `limit`, `filters` |
 | `offline_update` | Consolidate and update memory entries | `top_k`, `keep_top_n`, `score_threshold` |
