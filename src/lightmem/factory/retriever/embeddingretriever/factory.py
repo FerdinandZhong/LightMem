@@ -5,6 +5,7 @@ from lightmem.configs.retriever.embeddingretriever.base import EmbeddingRetrieve
 class EmbeddingRetrieverFactory:
     _MODEL_MAPPING: Dict[str, str] = {
         "qdrant": "lightmem.factory.retriever.embeddingretriever.qdrant.Qdrant",
+        "chroma": "lightmem.factory.retriever.embeddingretriever.chroma.Chroma",
     }
 
     @classmethod

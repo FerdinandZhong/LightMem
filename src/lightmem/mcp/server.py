@@ -37,18 +37,17 @@ CONFIG_PATH = os.environ.get(
 def build_config_from_env() -> Optional[Dict[str, Any]]:
     """
     Build a LightMem configuration from environment variables.
-    This enables pure API-based operation without local models.
 
     Environment variables:
         OPENAI_API_KEY: OpenAI API key (required, or set via configure_lightmem tool)
-        OPENAI_BASE_URL / OPENAI_API_BASE: OpenAI base URL (optional, defaults to https://api.openai.com/v1)
+        OPENAI_BASE_URL / OPENAI_API_BASE: OpenAI-compatible base URL (optional)
         LIGHTMEM_LLM_MODEL: LLM model name (optional, defaults to gpt-4o-mini)
         LIGHTMEM_EMBEDDING_MODEL: Embedding model name (optional, defaults to text-embedding-3-small)
         LIGHTMEM_EMBEDDING_DIMS: Embedding dimensions (optional, defaults to 1536)
-        LIGHTMEM_DATA_PATH: Path for local Qdrant storage (optional, defaults to ./lightmem_data)
-        LIGHTMEM_COLLECTION_NAME: Qdrant collection name (optional, defaults to lightmem_memory)
-        QDRANT_URL: Remote Qdrant server URL (optional, enables remote mode)
-        QDRANT_API_KEY: Qdrant API key for remote server (optional)
+        LIGHTMEM_COLLECTION_NAME: ChromaDB collection name (optional, defaults to lightmem_memory)
+        LIGHTMEM_DATA_PATH: Local ChromaDB storage path (optional, defaults to ./lightmem_data)
+        CHROMA_HOST: Remote ChromaDB host (optional, enables remote mode)
+        CHROMA_PORT: Remote ChromaDB port (optional, defaults to 8000)
     """
     api_key = _runtime_overrides.get("api_key") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -63,45 +62,30 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
     llm_model = _runtime_overrides.get("llm_model") or os.environ.get("LIGHTMEM_LLM_MODEL", "gpt-4o-mini")
     embedding_model = _runtime_overrides.get("embedding_model") or os.environ.get("LIGHTMEM_EMBEDDING_MODEL", "text-embedding-3-small")
     embedding_dims = int(_runtime_overrides.get("embedding_dims") or os.environ.get("LIGHTMEM_EMBEDDING_DIMS", "1536"))
-    data_path = os.environ.get("LIGHTMEM_DATA_PATH", "./lightmem_data")
     collection_name = os.environ.get("LIGHTMEM_COLLECTION_NAME", "lightmem_memory")
+    data_path = os.environ.get("LIGHTMEM_DATA_PATH", "./lightmem_data")
 
-    # Remote Qdrant configuration
-    qdrant_url = os.environ.get("QDRANT_URL")
-    qdrant_api_key = os.environ.get("QDRANT_API_KEY")
-    qdrant_timeout = int(os.environ.get("QDRANT_TIMEOUT", "60"))  # Default 60s for sandbox environments
+    chroma_host = os.environ.get("CHROMA_HOST")
+    chroma_port = int(os.environ.get("CHROMA_PORT", "8000"))
 
-    # Debug: Print configuration
-    print(f"[LightMem Config] QDRANT_URL env: {qdrant_url or 'NOT SET (using local storage)'}", file=sys.stderr)
-    if qdrant_url:
-        print(f"[LightMem Config] Using remote Qdrant: {qdrant_url}", file=sys.stderr)
-        print(f"[LightMem Config] QDRANT_API_KEY: {'SET' if qdrant_api_key else 'NOT SET'}", file=sys.stderr)
-    else:
-        print(f"[LightMem Config] LIGHTMEM_DATA_PATH env: {os.environ.get('LIGHTMEM_DATA_PATH', 'NOT SET')}", file=sys.stderr)
-        print(f"[LightMem Config] Using local data_path: {data_path}", file=sys.stderr)
-        print(f"[LightMem Config] on_disk: True", file=sys.stderr)
     print(f"[LightMem Config] Using collection_name: {collection_name}", file=sys.stderr)
-
-    # Build Qdrant retriever config
-    if qdrant_url:
-        # Remote Qdrant mode
-        qdrant_config = {
+    if chroma_host:
+        print(f"[LightMem Config] Using remote ChromaDB: {chroma_host}:{chroma_port}", file=sys.stderr)
+        chroma_config: Dict[str, Any] = {
             "collection_name": collection_name,
             "embedding_model_dims": embedding_dims,
-            "url": qdrant_url,
-            "timeout": qdrant_timeout,
+            "host": chroma_host,
+            "port": chroma_port,
         }
-        if qdrant_api_key:
-            qdrant_config["api_key"] = qdrant_api_key
-        print(f"[LightMem Config] Qdrant timeout: {qdrant_timeout}s", file=sys.stderr)
     else:
-        # Local Qdrant mode
-        qdrant_config = {
+        print(f"[LightMem Config] Using local ChromaDB path: {data_path}", file=sys.stderr)
+        chroma_config = {
             "collection_name": collection_name,
             "embedding_model_dims": embedding_dims,
             "path": data_path,
-            "on_disk": True
         }
+
+    embedding_retriever = {"model_name": "chroma", "configs": chroma_config}
 
     return {
         "pre_compress": False,
@@ -130,10 +114,7 @@ def build_config_from_env() -> Optional[Dict[str, Any]]:
             }
         },
         "retrieve_strategy": "embedding",
-        "embedding_retriever": {
-            "model_name": "qdrant",
-            "configs": qdrant_config
-        },
+        "embedding_retriever": embedding_retriever,
         "update": "offline",
         "logging": {
             "level": "INFO",
@@ -558,13 +539,21 @@ Usage:
    export OPENAI_API_KEY="your-api-key"
    lightmem-mcp
 
+   # Optional overrides:
+   # LIGHTMEM_DATA_PATH=./my_data        local ChromaDB storage path
+   # CHROMA_HOST=localhost               use a remote ChromaDB server
+   # CHROMA_PORT=8000
+   # LIGHTMEM_LLM_MODEL=gpt-4o-mini
+   # LIGHTMEM_EMBEDDING_MODEL=text-embedding-3-small
+   # LIGHTMEM_EMBEDDING_DIMS=1536
+
 2. With config file:
 
    lightmem-mcp --config /path/to/config.json
 
 3. Via uvx (after package is published):
 
-   uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light" lightmem-mcp
+   uvx --from "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light-chroma" lightmem-mcp
 
 4. MCP client configuration:
 
@@ -572,7 +561,7 @@ Usage:
      "mcpServers": {
        "lightmem": {
          "command": "uvx",
-         "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light", "lightmem-mcp"],
+         "args": ["--from", "git+https://github.com/FerdinandZhong/LightMem.git@mcp-light-chroma", "lightmem-mcp"],
          "env": {
            "OPENAI_API_KEY": "${OPENAI_API_KEY}"
          }

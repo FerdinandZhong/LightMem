@@ -11,7 +11,8 @@ class EmbeddingRetrieverConfig(BaseModel):
     configs: Optional[Dict] = Field(description="Configuration for the specific vector store", default={})
 
     _model_list: ClassVar[Dict[str, str]] = {
-        "qdrant": "lightmem.configs.retriever.embeddingretriever.qdrant.QdrantConfig"
+        "qdrant": "lightmem.configs.retriever.embeddingretriever.qdrant.QdrantConfig",
+        "chroma": "lightmem.configs.retriever.embeddingretriever.chroma.ChromaConfig",
     }
 
     @model_validator(mode='before')
