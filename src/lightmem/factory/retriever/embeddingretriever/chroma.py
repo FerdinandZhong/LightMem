@@ -196,7 +196,7 @@ class Chroma:
         kwargs = dict(
             query_embeddings=[query_vector],
             n_results=fetch_limit,
-            include=["distances", "metadatas"] + (["embeddings"] if return_full else []),
+            include=["distances", "metadatas"],
         )
         if where:
             kwargs["where"] = where
@@ -206,7 +206,6 @@ class Chroma:
         ids = hits["ids"][0]
         distances = hits["distances"][0]
         metadatas = hits["metadatas"][0]
-        embeddings = hits.get("embeddings", [[]])[0] if return_full else []
 
         exclude_set = set(self._to_str_id(eid) for eid in exclude_ids) if exclude_ids else set()
 
