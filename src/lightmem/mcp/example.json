@@ -27,7 +27,7 @@
     },
     "retrieve_strategy": "embedding",
     "embedding_retriever": {
-        "model_name": "qdrant",
+        "model_name": "chroma",
         "configs": {
             "collection_name": "lightmem_memory",
             "embedding_model_dims": 1536,

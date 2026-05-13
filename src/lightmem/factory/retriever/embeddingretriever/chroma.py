@@ -47,7 +47,7 @@ class Chroma:
         elif config.path:
             self.client = chromadb.PersistentClient(path=config.path)
         else:
-            self.client = chromadb.Client()
+            self.client = chromadb.EphemeralClient()
 
         self.collection_name = config.collection_name
         self.embedding_model_dims = config.embedding_model_dims
@@ -137,8 +137,8 @@ class Chroma:
             return None
         return {
             "id": result["ids"][0],
-            "payload": result["metadatas"][0] if result["metadatas"] else {},
-            "vector": result["embeddings"][0] if result["embeddings"] else None,
+            "payload": result["metadatas"][0] if result["metadatas"] is not None else {},
+            "vector": result["embeddings"][0] if result["embeddings"] is not None else None,
         }
 
     def delete(self, vector_id: Any):
@@ -275,8 +275,8 @@ class Chroma:
 
         points = []
         for i, doc_id in enumerate(raw_ids):
-            payload = metadatas[i] if metadatas and i < len(metadatas) else {}
-            vector = embeddings[i] if embeddings and i < len(embeddings) else None
+            payload = metadatas[i] if metadatas is not None and i < len(metadatas) else {}
+            vector = embeddings[i] if embeddings is not None and i < len(embeddings) else None
             points.append(ChromaPoint(id=doc_id, payload=payload, vector=vector))
 
         next_offset = offset_val + limit if has_more else None
