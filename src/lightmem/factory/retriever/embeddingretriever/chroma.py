@@ -220,7 +220,7 @@ class Chroma:
                 results.append({
                     "id": doc_id,
                     "score": score,
-                    "payload": metadatas[i] if metadatas else {},
+                    "payload": metadatas[i] if metadatas is not None else {},
                 })
             else:
                 results.append({"id": doc_id, "score": score})
@@ -270,8 +270,10 @@ class Chroma:
         has_more = len(raw_ids) > limit
         raw_ids = raw_ids[:limit]
 
-        metadatas = raw.get("metadatas") or []
-        embeddings = raw.get("embeddings") or []
+        _m = raw.get("metadatas")
+        metadatas = _m if _m is not None else []
+        _e = raw.get("embeddings")
+        embeddings = _e if _e is not None else []
 
         points = []
         for i, doc_id in enumerate(raw_ids):
