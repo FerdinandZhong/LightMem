@@ -15,7 +15,6 @@ from lightmem.factory.memory_manager.factory import MemoryManagerFactory
 from lightmem.factory.text_embedder.factory import TextEmbedderFactory
 from lightmem.factory.retriever.contextretriever.factory import ContextRetrieverFactory
 from lightmem.factory.retriever.embeddingretriever.factory import EmbeddingRetrieverFactory
-from lightmem.factory.retriever.embeddingretriever.qdrant import QdrantConfig
 from lightmem.factory.memory_buffer.sensory_memory import SenMemBufferManager
 from lightmem.factory.memory_buffer.short_term_memory import ShortMemBufferManager
 from lightmem.memory.utils import MemoryEntry, assign_sequence_numbers_with_timestamps, save_memory_entries,convert_extraction_results_to_memory_entries,normalize_extraction_prompts,process_extraction_results
